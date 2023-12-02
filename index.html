@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NPC statblock</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+</head>
+<body>
+    <div class="wrapper">
+        <header>
+            <section class="name">
+                <input id="name_input" class="input-field" type="text">
+                <label for="name_input">Имя персонажа</label>
+            </section>
+            <section class="basic-info">
+                <div class="basic-info-form">
+                    <label><input id="class" class="input-field"/>Класс</label>
+                    <label><input id="history" class="input-field"/>Предыстория</label>
+                    <label><input id="race" class="input-field"/>Раса</label>
+                    <label><input id="view" class="input-field"/>Мировоззрение</label>
+                </div>
+            </section>
+        </header>
+        <main>
+            <section class="statblock"> 
+                <div><div class="inner"><input class="input-field" id="str" type="text" maxlength="2"><label>Сила</label></div></div>
+                <div><div class="inner"><input class="input-field" id="dex" type="text" maxlength="2"><label>Ловкость</label></div></div>
+                <div><div class="inner"><input class="input-field" id="health" type="text" maxlength="2"><label>Телосложение</label></div></div>
+                <div><div class="inner"><input class="input-field" id="int" type="text" maxlength="2"><label>Интеллект</label></div></div>
+                <div><div class="inner"><input class="input-field" id="mud" type="text" maxlength="2"><label>Мудрость</label></div></div>
+                <div><div class="inner"><input class="input-field" id="char" type="text" maxlength="2"><label>Харизма</label></div></div>
+            </section>
+            <section class="hp">
+                <section class="top-line">
+                    <div><div class="inner"><input type="text" class="input-field" id="AD" maxlength="2"><label>КД</label></div></div>
+                    <div><div class="inner"><input type="text" class="input-field" id="init"maxlength="2"><label>Инициатива</label></div></div>
+                    <div><div class="inner"><input type="text" class="input-field" id="speed" maxlength="4"><label>Скорость</label></div></div>
+                </section>
+                <section class="current-hp">
+                    <div class="max-hp">
+                        <label>Максимум хитов: <input type="text" id="max-hp-input" class="input-field"></label>
+                    </div>
+                    <div class="cur-hp">
+                        <label><input type="text" id="cur-hp-input" class="input-field">Текущие хиты</label>
+                    </div>
+                </section>
+                <section class="block">
+                    <div class="inner-block">
+                        <label><input type="text" id="temp-hp-input" class="input-field">Временные хиты</label>
+                    </div>
+                </section>
+                <section class="block expandable">
+                    <div class="inner-block">
+                        <label class="small_text"><textarea type="text" id="attacks" class="expandableArea input-field" id="formattedText"></textarea>Атаки и заклинания</label>
+                    </div>
+                </section>
+            </section>
+            <section class="personality">
+                <section class="block">
+                    <div class="inner-block">
+                        <label><textarea id="pers1" class="input-field"></textarea>Черты характера</label>
+                    </div>
+                </section>
+                <section class="block center-block">
+                    <div class="inner-block">
+                        <label><textarea id="pers2" class="input-field"></textarea>Идеалы</label>
+                    </div>
+                </section>
+                <section class="block center-block">
+                    <div class="inner-block">
+                        <label><textarea id="pers3" class="input-field"></textarea>Привязанности</label>
+                    </div>
+                </section>
+                <section class="block">
+                    <div class="inner-block">
+                        <label><textarea id="pers4" class="input-field"></textarea>Слабости</label>
+                    </div>
+                </section>
+            </section>
+        </main>
+        <footer>
+            <section class="block">
+                <div class="inner-block">
+                    <label><textarea id="notes" class="input-field"></textarea>Заметки</label>
+                </div>
+            </section>
+        </footer>
+    </div>
+    <aside id="saveButtonContainer">
+    </aside>
+    <script src="./js/expand.js"></script>
+
+<script defer>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadButtons();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'F1') {
+            e.preventDefault();
+            clearActiveButton();
+            saveValues();
+        } else if (e.key === 'F2') {
+            e.preventDefault();
+            updateValues();
+        }else if (e.key === 'F4') {
+            e.preventDefault();
+            deleteButton();
+        }else if(e.key === 'F6'){
+            e.preventDefault();
+            openMenu();
+        }
+    });
+
+    let savedData = JSON.parse(localStorage.getItem('savedData')) || {};
+    let activeButtonName = null;
+    function openMenu(){
+        if(document.getElementById('saveButtonContainer').style.display == "none"){
+            document.getElementById('saveButtonContainer').style.display = "block";
+        }else{
+            document.getElementById('saveButtonContainer').style.display = "none";
+        }
+    }
+    function saveValues() {
+        const valuesToSave = {};
+
+        document.querySelectorAll('.input-field').forEach(function (input) {
+            const id = input.id;
+            const value = input.value.trim();
+            valuesToSave[id] = value;
+            input.value = ''; // Clear the input field
+        });
+
+        const nameInputValue = valuesToSave['name_input'] || 'DefaultName';
+        const existingButton = findButtonByName(nameInputValue);
+
+        if (existingButton) {
+            // Update existing button
+            const buttonId = existingButton.id;
+            savedData[buttonId] = { ...savedData[buttonId], ...valuesToSave };
+            updateButtonText(buttonId);
+            activeButtonName = nameInputValue; // Set as active
+        } else {
+            // Create a new button
+            const buttonId = 'loadButton' + Object.keys(savedData).length;
+            savedData[buttonId] = valuesToSave;
+
+            // Create a new button in the menu
+            const newButton = document.createElement('button');
+            newButton.id = buttonId;
+            newButton.classList.add('npc');
+            newButton.textContent = nameInputValue;
+
+            newButton.addEventListener('click', function () {
+                loadValues(this);
+                activeButtonName = nameInputValue; // Set as active
+            });
+
+            document.getElementById('saveButtonContainer').appendChild(newButton);
+        }
+
+        // Save to browser storage
+        localStorage.setItem('savedData', JSON.stringify(savedData));
+    }
+
+    function updateValues() {
+        if (activeButtonName) {
+            const valuesToSave = {};
+
+            document.querySelectorAll('.input-field').forEach(function (input) {
+                const id = input.id;
+                const value = input.value.trim();
+                valuesToSave[id] = value;
+            });
+
+            const existingButton = findButtonByName(activeButtonName);
+
+            if (existingButton) {
+                // Update existing button
+                const buttonId = existingButton.id;
+                savedData[buttonId] = { ...savedData[buttonId], ...valuesToSave };
+                updateButtonText(buttonId);
+                console.log(savedData);
+            } else {
+                console.log("Active button not found.");
+            }
+        } else {
+            console.log("No active button to update.");
+        }
+
+        // Save to browser storage
+        localStorage.setItem('savedData', JSON.stringify(savedData));
+    }
+
+    function loadValues(button) {
+        const valuesToLoad = savedData[button.id];
+
+        for (const id in valuesToLoad) {
+            const input = document.getElementById(id);
+            if (input) {
+                input.value = valuesToLoad[id];
+            }
+        }
+    }
+
+    function findButtonByName(nameInputValue) {
+        const buttons = document.querySelectorAll('.npc');
+        for (const button of buttons) {
+            if (savedData[button.id] && savedData[button.id]['name_input'] === nameInputValue) {
+                return button;
+            }
+        }
+        return null;
+    }
+
+    function updateButtonText(buttonId) {
+        const button = document.getElementById(buttonId);
+        const nameInputValue = savedData[buttonId]['name_input'];
+        button.textContent = nameInputValue;
+    }
+
+    function clearActiveButton() {
+        activeButtonName = null;
+    }
+
+    function loadButtons() {
+        for (const buttonId in savedData) {
+            const valuesToLoad = savedData[buttonId];
+            const nameInputValue = valuesToLoad['name_input'] || '';
+
+            // Exclude creating buttons for entries with name_input as "DefaultName"
+            if (nameInputValue !== 'DefaultName') {
+                // Create a new button in the menu
+                const newButton = document.createElement('button');
+                newButton.id = buttonId;
+                newButton.classList.add('npc');
+                newButton.textContent = nameInputValue;
+
+                newButton.addEventListener('click', function () {
+                    loadValues(this);
+                    activeButtonName = nameInputValue; // Set as active
+                });
+
+                document.getElementById('saveButtonContainer').appendChild(newButton);
+            }
+        }
+    }
+
+    function deleteButton() {
+        if (activeButtonName) {
+            const existingButton = findButtonByName(activeButtonName);
+
+            if (existingButton) {
+                // Check if the active button has associated data
+                const buttonId = existingButton.id;
+
+                if (savedData[buttonId]) {
+                    // Delete the button and its associated object
+                    delete savedData[buttonId];
+                    document.getElementById('saveButtonContainer').removeChild(existingButton);
+                    console.log(savedData);
+
+                    // Clear active button after deletion
+                    clearActiveButton();
+
+                    // Save to browser storage
+                    localStorage.setItem('savedData', JSON.stringify(savedData));
+                    document.querySelectorAll('.input-field').forEach(function (input) {
+                        input.value = ''; // Clear the input field
+                    });
+                } else {
+                    console.log("Active button has no associated data, cannot delete.");
+                }
+            } else {
+                console.log("Active button not found.");
+            }
+        } else {
+            console.log("No active button to delete.");
+        }
+    }
+</script>
+</body>
+</html>
+
+    
+</html>
